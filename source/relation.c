@@ -1201,6 +1201,239 @@ char * osl_relation_spprint(osl_relation_p relation, osl_names_p names) {
   return string;
 }
 
+typedef struct extendable_string {
+  char * string;
+  size_t size;
+} extendable_string;
+
+typedef extendable_string * extendable_string_p;
+
+extendable_string_p extendable_string_malloc() {
+  extendable_string_p str;
+  OSL_malloc(str, extendable_string_p, sizeof(extendable_string));
+  OSL_malloc(str->string, char *, OSL_MAX_STRING * sizeof(char));
+  str->size = OSL_MAX_STRING;
+  str->string[0] = 0;
+  return str;
+}
+
+void extendable_string_append(extendable_string_p string, const char *appendix) {
+  size_t appendix_length = strlen(appendix);
+  size_t string_length = strlen(string->string);
+  size_t old_size = string->size;
+
+  while (appendix_length + string_length + 1 >= string->size) {
+    string->size += OSL_MAX_STRING;
+  }
+  if (old_size != string->size) {
+    OSL_realloc(string->string, char *, string->size);
+  }
+  string->string = strcat(string->string, appendix);
+}
+
+void extendable_string_cat(extendable_string_p string, extendable_string_p appendix) {
+  extendable_string_append(string, appendix->string);
+}
+
+void extendable_string_free(extendable_string_p string) {
+  free(string->string);
+  free(string);
+}
+
+char * extendable_string_extract_string(extendable_string_p string) {
+  char * str = string->string;
+  free(string);
+  return str;
+}
+
+extendable_string_p extendable_string_wrap_string(char *string) {
+  extendable_string_p str;
+  size_t required_length = strlen(string) + 1;
+
+  required_length = required_length > OSL_MAX_STRING ? required_length : OSL_MAX_STRING;
+  OSL_malloc(str, extendable_string_p, sizeof(extendable_string));
+  OSL_malloc(str->string, char *, required_length);
+  str->string = strcpy(str->string, string);
+  return str;
+}
+
+static void latex_draw_vertical_line_between(extendable_string_p string,
+                    int vertical_from, int vertical_to, int horizontal) {
+  static char buffer[256];
+  snprintf(buffer, 255, "0.5*(m-%d-%d.north east)+0.5*(m-%d-%d.north west)",
+           vertical_from, horizontal,
+           vertical_from, horizontal + 1);
+  extendable_string_append(string, "\\draw[dashed]($");
+  extendable_string_append(string, buffer);
+  extendable_string_append(string, "$) --\n    ($");
+  snprintf(buffer, 255, "0.5*(m-%d-%d.south east)+0.5*(m-%d-%d.south west)",
+           vertical_to, horizontal,
+           vertical_to, horizontal + 1);
+  extendable_string_append(string, buffer);
+  extendable_string_append(string, "$);\n");
+}
+
+static void latex_print_iterators(extendable_string_p string, int start_column,
+                                  int length, osl_strings_p strings) {
+  static char buffer[256];
+  int i;
+  for (i = 0; i < length; i++) {
+    snprintf(buffer, 255, "m-1-%d] (top-%d) {$\\scriptstyle %s$};\n",
+             start_column + i, start_column + i, strings->string[i]);
+    extendable_string_append(string, "\\node[label, above=\\lenmatlabtop of ");
+    extendable_string_append(string, buffer);
+  }
+}
+
+static char * latex_preprocess_comment(const char *comment) {
+  const char * comment_ptr = &(comment[6]); // ignore '   ## '
+  char * located;
+  char * output;
+
+  // Only one == or >= is expected in the comment.
+  if ((located = strstr(comment_ptr, "=="))) {
+    // +1 byte for \0, -1 byte for replacing == with =.
+    OSL_malloc(output, char *, strlen(comment_ptr) * sizeof(char));
+    strncpy(output, comment_ptr, (located - comment_ptr) + 1);
+    output[located - comment_ptr]     = '=';
+    output[located - comment_ptr + 1] = '\0';
+    strcat(output, located + 2);
+  } else if ((located = strstr(comment_ptr, ">="))) {
+    // +1 byte for \0, +2 bytes for replacing >= with \geq.
+    OSL_malloc(output, char *, (strlen(comment_ptr) + 3) * sizeof(char));
+    strncpy(output, comment_ptr, (located - comment_ptr) + 1);
+    strcat(output, "\\geq");
+    strcat(output, located + 2);
+  } else {
+    OSL_malloc(output, char *, (strlen(comment_ptr) + 1) * sizeof(char));
+    strcpy(output, comment);
+  }
+  return output;
+}
+
+char * osl_relation_spprint_latex(osl_relation_p relation, osl_names_p names, const char * statement_name) {
+  int i, j, value, last;
+  char buffer[256];
+  osl_strings_p ones;
+  char ** name_strings;
+  char * comment;
+  char * processed;
+  extendable_string_p string = extendable_string_malloc();
+
+  if (names == NULL) {
+    names = osl_relation_names(relation);
+  }
+  if (statement_name == NULL) {
+    statement_name = "S";
+  }
+
+  name_strings = osl_relation_strings(relation, names);
+
+  extendable_string_append(string, "\\begin{tikzpicture}\n");
+  extendable_string_append(string, "\\matrix[matrix of math nodes,left delimiter=[,right delimiter={]},\n"
+                                   "    inner sep=\\lenmatinrsep,\n"
+                                   "    row sep=\\lenmatrowsep,\n"
+                                   "    column sep=\\lenmatcolsep");
+
+  // Column styles.
+  // First column in the matrix is a flag for equation/inequation.  No need
+  // for outputting it as a number.
+  for (i = 1; i < relation->nb_columns; i++) {
+    snprintf(buffer, 255, ",\ncolumn %d/.style={anchor=base east}", i);
+    extendable_string_append(string, buffer);
+  }
+  extendable_string_append(string, "] (m) {\n");
+
+  // Matrix elements.
+  for (i = 0; i < relation->nb_rows; i++) {
+    for (j = 1; j < relation->nb_columns; j++) {
+      value = osl_int_get_si(relation->precision, relation->m[i][j]);
+      last = j == relation->nb_columns - 1;
+      if (value < 0) {
+        snprintf(buffer, 255, last ? "\\miniminus%d \\\\\n" : "\\miniminus%d & ", -value);
+      } else {
+        snprintf(buffer, 255, last ? "%d \\\\\n" : "%d & ", value);
+      }
+      extendable_string_append(string, buffer);
+    }
+  }
+  extendable_string_append(string, "};\n");
+
+  // Dashed lines inside matrix that separate different types of dimensions.
+  latex_draw_vertical_line_between(string, 1, relation->nb_rows,
+                                   relation->nb_output_dims);
+  if (relation->nb_input_dims != 0) {
+    latex_draw_vertical_line_between(string, 1, relation->nb_rows,
+                        relation->nb_output_dims + relation->nb_input_dims);
+  }
+  if (relation->nb_local_dims != 0) {
+    latex_draw_vertical_line_between(string, 1, relation->nb_rows,
+                        relation->nb_output_dims + relation->nb_input_dims
+                        + relation->nb_local_dims);
+  }
+  if (relation->nb_parameters != 0) {
+    latex_draw_vertical_line_between(string, 1, relation->nb_rows,
+                                     relation->nb_columns - 2);
+  }
+
+  latex_print_iterators(string, 1, relation->nb_output_dims, names->scatt_dims);
+  latex_print_iterators(string, relation->nb_output_dims + 1,
+                        relation->nb_input_dims, names->iterators);
+  latex_print_iterators(string, relation->nb_output_dims + relation->nb_input_dims + 1,
+                        relation->nb_local_dims, names->local_dims);
+  latex_print_iterators(string, relation->nb_output_dims + relation->nb_input_dims + relation->nb_local_dims + 1,
+                        relation->nb_parameters, names->parameters);
+  ones = osl_strings_malloc();
+  osl_strings_add(ones, "1");
+  latex_print_iterators(string, relation->nb_columns - 1, 1, ones);
+  osl_strings_free(ones);
+
+  for (i = 0; i < relation->nb_rows; i++) {
+    snprintf(buffer, 255, "\\node[right=\\lenmatlabrig of m-%d-%d] (right-%d)",
+             i + 1, relation->nb_columns - 1, i + 1);
+    extendable_string_append(string, buffer);
+    snprintf(buffer, 255, " {$\\scriptstyle %s0:\\;",
+             osl_int_zero(relation->precision, relation->m[i][0]) ? "=" : "\\geq");
+    extendable_string_append(string, buffer);
+
+    comment = osl_relation_sprint_comment(relation, i, name_strings, names->arrays->string);
+    processed = latex_preprocess_comment(comment);
+    free(comment);
+    extendable_string_append(string, processed);
+    free(processed);
+    extendable_string_append(string, "$};\n");
+  }
+
+  extendable_string_append(string, "\\node[left=5pt of m] (left-1) {$");
+  switch (relation->type) {
+  case OSL_TYPE_SCATTERING:
+    extendable_string_append(string, "\\theta");
+    break;
+  case OSL_TYPE_DOMAIN:
+    extendable_string_append(string, "D");
+    break;
+  case OSL_TYPE_ACCESS:
+    extendable_string_append(string, "A");
+    break;
+  default:
+    extendable_string_append(string, "M");
+    break;
+  }
+
+  snprintf(buffer, 255, "_{%s}(", statement_name);
+  extendable_string_append(string, buffer);
+  if (relation->nb_parameters != 0) {
+    extendable_string_append(string, names->parameters->string[0]);
+    for (i = 1; i < relation->nb_parameters; i++) {
+      snprintf(buffer, 255, ",%s", names->parameters->string[i]);
+      extendable_string_append(string, buffer);
+    }
+  }
+  extendable_string_append(string, "):$};\n\\end{tikzpicture}\n");
+
+  return extendable_string_extract_string(string);
+}
+
 
 /**
  * osl_relation_spprint_scoplib function:
