@@ -1311,14 +1311,14 @@ static char * latex_preprocess_comment(const char *comment) {
   return output;
 }
 
-char * osl_relation_spprint_latex(osl_relation_p relation, osl_names_p names, const char * statement_name) {
+static void osl_relation_latex_print_matrix(extendable_string_p string, osl_relation_p relation,
+                                            osl_names_p names, const char * statement_name) {
   int i, j, value, last;
   char buffer[256];
   osl_strings_p ones;
   char ** name_strings;
   char * comment;
   char * processed;
-  extendable_string_p string = extendable_string_malloc();
 
   if (names == NULL) {
     names = osl_relation_names(relation);
@@ -1329,7 +1329,6 @@ char * osl_relation_spprint_latex(osl_relation_p relation, osl_names_p names, co
 
   name_strings = osl_relation_strings(relation, names);
 
-  extendable_string_append(string, "\\begin{tikzpicture}\n");
   extendable_string_append(string, "\\matrix[matrix of math nodes,left delimiter=[,right delimiter={]},\n"
                                    "    inner sep=\\lenmatinrsep,\n"
                                    "    row sep=\\lenmatrowsep,\n"
@@ -1429,11 +1428,45 @@ char * osl_relation_spprint_latex(osl_relation_p relation, osl_names_p names, co
       extendable_string_append(string, buffer);
     }
   }
-  extendable_string_append(string, "):$};\n\\end{tikzpicture}\n");
+  extendable_string_append(string, "):$};\n");
+}
+
+char * osl_relation_spprint_latex(osl_relation_p relation, osl_names_p names, const char * statement_name) {
+  extendable_string_p string = extendable_string_malloc();
+
+  extendable_string_append(string, "\\begin{tikzpicture}\n");
+  osl_relation_latex_print_matrix(string, relation, names, statement_name);
+  extendable_string_append(string, "\\end{tikzpicture}\n");
 
   return extendable_string_extract_string(string);
 }
 
+char * osl_relation_diff_spprint_latex(osl_relation_p relation, osl_relation_p original,
+                                       osl_names_p names, const char *statement_name) {
+  int i, j;
+  char buffer[64];
+  extendable_string_p string = extendable_string_malloc();
+
+  if (relation->nb_columns != original->nb_columns ||
+      relation->nb_rows != original->nb_rows ||
+      relation->precision != original->precision)
+    return NULL;
+
+  extendable_string_append(string, "\\begin{tikzpicture}\n");
+  osl_relation_latex_print_matrix(string, relation, names, statement_name);
+  for (i = 0; i < relation->nb_rows; i++) {
+    for (j = 1; j < relation->nb_columns; j++) {
+      if (!osl_int_eq(relation->precision, relation->m[i][j], original->m[i][j])) {
+        snprintf(buffer, 63, "\\highlight[black]{m-%d-%d}{m-%d-%d}\n",
+                 i + 1, j, i + 1, j);
+        extendable_string_append(string, buffer);
+      }
+    }
+  }
+  extendable_string_append(string, "\\end{tikzpicture}\n");
+
+  return extendable_string_extract_string(string);
+}
 
 /**
  * osl_relation_spprint_scoplib function:

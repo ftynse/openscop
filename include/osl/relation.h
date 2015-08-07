@@ -135,6 +135,8 @@ char *         osl_relation_sprint(osl_relation_p);
 void           osl_relation_print(FILE *, osl_relation_p);
 
 char *         osl_relation_spprint_latex(osl_relation_p, osl_names_p, const char *);
+char *         osl_relation_diff_spprint_latex(osl_relation_p, osl_relation_p,
+                                               osl_names_p, const char *);
 
 // SCoPLib Compatibility
 char *         osl_relation_spprint_polylib_scoplib(osl_relation_p,
