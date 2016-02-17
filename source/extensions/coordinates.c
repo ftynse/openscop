@@ -287,7 +287,8 @@ osl_coordinates_p osl_coordinates_clone(osl_coordinates_p coordinates) {
     return NULL;
 
   clone = osl_coordinates_malloc();
-  OSL_strdup(clone->name, coordinates->name);
+  if (coordinates->name)
+    OSL_strdup(clone->name, coordinates->name);
   clone->line_start   = coordinates->line_start;
   clone->column_start = coordinates->column_start;
   clone->line_end     = coordinates->line_end;

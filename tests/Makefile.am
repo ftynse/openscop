@@ -102,7 +102,8 @@ osl_test_SOURCES = \
 	test_matmult.scop \
 	test_clay.scop \
 	test_no_statement.scop \
-	test_scop_list.scop
+	test_scop_list.scop \
+	test_codemodel.scop
 osl_int_SOURCES                    = osl_int.c
 osl_pluto_unroll_SOURCES           = osl_pluto_unroll.c
 osl_relation_set_precision_SOURCES = osl_relation_set_precision.c

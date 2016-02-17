@@ -1,0 +1,308 @@
+<OpenScop>
+
+# =============================================== Global
+# Language
+C
+
+# Context
+CONTEXT
+0 2 0 0 0 0
+
+# Parameter names are not provided
+0
+
+# No statement
+0
+
+# =============================================== Extensions
+<codemodel>
+# Type (0 = loop, 1 = stmt)
+0
+# Coordinates
+0
+# Initializer coordinates
+0
+# Condition coordinates
+0
+# Increment coordinates
+0
+# Children
+4
+# Type (0 = loop, 1 = stmt)
+1
+# Coordinates
+1
+# File name
+(null)
+# Starting line and column
+2 1
+# Ending line and column
+2 4
+# Indentation
+-1
+# Children
+0
+# Type (0 = loop, 1 = stmt)
+0
+# Coordinates
+1
+# File name
+(null)
+# Starting line and column
+3 1
+# Ending line and column
+12 2
+# Indentation
+-1
+# Initializer coordinates
+1
+# File name
+(null)
+# Starting line and column
+3 9
+# Ending line and column
+3 16
+# Indentation
+-1
+# Condition coordinates
+1
+# File name
+(null)
+# Starting line and column
+3 16
+# Ending line and column
+3 23
+# Indentation
+-1
+# Increment coordinates
+1
+# File name
+(null)
+# Starting line and column
+3 23
+# Ending line and column
+3 28
+# Indentation
+-1
+# Children
+4
+# Type (0 = loop, 1 = stmt)
+1
+# Coordinates
+1
+# File name
+(null)
+# Starting line and column
+4 3
+# Ending line and column
+4 6
+# Indentation
+-1
+# Children
+0
+# Type (0 = loop, 1 = stmt)
+0
+# Coordinates
+1
+# File name
+(null)
+# Starting line and column
+5 3
+# Ending line and column
+7 4
+# Indentation
+-1
+# Initializer coordinates
+1
+# File name
+(null)
+# Starting line and column
+5 11
+# Ending line and column
+5 18
+# Indentation
+-1
+# Condition coordinates
+1
+# File name
+(null)
+# Starting line and column
+5 18
+# Ending line and column
+5 25
+# Indentation
+-1
+# Increment coordinates
+1
+# File name
+(null)
+# Starting line and column
+5 25
+# Ending line and column
+5 30
+# Indentation
+-1
+# Children
+1
+# Type (0 = loop, 1 = stmt)
+1
+# Coordinates
+1
+# File name
+(null)
+# Starting line and column
+6 5
+# Ending line and column
+6 8
+# Indentation
+-1
+# Children
+0
+# Type (0 = loop, 1 = stmt)
+0
+# Coordinates
+1
+# File name
+(null)
+# Starting line and column
+8 3
+# Ending line and column
+10 4
+# Indentation
+-1
+# Initializer coordinates
+1
+# File name
+(null)
+# Starting line and column
+8 11
+# Ending line and column
+8 18
+# Indentation
+-1
+# Condition coordinates
+1
+# File name
+(null)
+# Starting line and column
+8 18
+# Ending line and column
+8 25
+# Indentation
+-1
+# Increment coordinates
+1
+# File name
+(null)
+# Starting line and column
+8 25
+# Ending line and column
+8 30
+# Indentation
+-1
+# Children
+1
+# Type (0 = loop, 1 = stmt)
+1
+# Coordinates
+1
+# File name
+(null)
+# Starting line and column
+9 5
+# Ending line and column
+9 8
+# Indentation
+-1
+# Children
+0
+# Type (0 = loop, 1 = stmt)
+1
+# Coordinates
+1
+# File name
+(null)
+# Starting line and column
+11 3
+# Ending line and column
+11 6
+# Indentation
+-1
+# Children
+0
+# Type (0 = loop, 1 = stmt)
+0
+# Coordinates
+1
+# File name
+(null)
+# Starting line and column
+13 1
+# Ending line and column
+14 6
+# Indentation
+-1
+# Initializer coordinates
+1
+# File name
+(null)
+# Starting line and column
+13 9
+# Ending line and column
+13 16
+# Indentation
+-1
+# Condition coordinates
+1
+# File name
+(null)
+# Starting line and column
+13 16
+# Ending line and column
+13 23
+# Indentation
+-1
+# Increment coordinates
+1
+# File name
+(null)
+# Starting line and column
+13 23
+# Ending line and column
+13 28
+# Indentation
+-1
+# Children
+1
+# Type (0 = loop, 1 = stmt)
+1
+# Coordinates
+1
+# File name
+(null)
+# Starting line and column
+14 3
+# Ending line and column
+14 6
+# Indentation
+-1
+# Children
+0
+# Type (0 = loop, 1 = stmt)
+1
+# Coordinates
+1
+# File name
+(null)
+# Starting line and column
+15 1
+# Ending line and column
+15 4
+# Indentation
+-1
+# Children
+0
+</codemodel>
+
+</OpenScop>
+

@@ -2445,6 +2445,7 @@ particular, the sender fully accepts the license and copyright notice.
 * Arrays Extension::
 * Scatnames Extension::
 * Coordinates Extension::
+* Codemodel Extension::
 * Clay Extension::
 * Extbody Extension::
 * Loop Extension::
@@ -2687,6 +2688,151 @@ typedef struct osl_coordinates* osl_coordinates_p;
 
 @c ---------------------------------------------------------------------------
 
+
+@node Codemodel Extension
+@subsection Codemodel Extension
+
+@noindent @strong{Description}
+@itemize @bullet
+@item URI: @code{codemodel}.
+@item Author: Oleksandr Zinenko <oleksandr.zinenko@@inria.fr>
+@item Purpose: the @code{codemodel} extension provides the information
+about the each individual loop and statement location in the original code
+the starting and ending lines and columns, positions of the loop initialization,
+condition and increment clauses.
+@end itemize
+
+@noindent @strong{File Format}
+
+@noindent The @code{codemodel} extension file format respects the following
+grammar:
+@example
+Codemodel_generic       ::= "<codemodel>" Codemodel "</codemodel>"
+Codemodel               ::= Node
+Node                    ::= Type Opt_coordinates [Loop_coordinates]
+                        Nb_children Node_list
+Type                    ::= _Integer
+Opt_coordinates         ::= _Integer [Coordinates]
+Loop_coordinates        ::= Initializer_coordinates Condition_coordinates
+                        Increment_coordinates
+Node_list               ::= | Node Node_list
+Initializer_coordinates ::= Opt_coordinates
+Condition_coordinates   ::= Opt_coordinates
+Increment_coordinates   ::= Opt_coordinates
+Coordinates             ::= File_name Start_line Start_column
+                          End_line End_column Indentation
+File_name               ::= _String
+Start_line              ::= _Integer
+Start_column            ::= _Integer
+End_line                ::= _Integer
+End_column              ::= _Integer
+Indentation             ::= _Integer
+@end example
+
+@noindent This structure represents a tree that starts with a root Node that may
+have an arbitrary number of child nodes, each of which may in turn have its own
+children.  An outermost node is a (pseudo-loop) that contains all the other
+nodes, which is useful for, e.g., SCoPs that have multiple loops at the root
+level. A Node can be either a Loop Node (Type 0) or a Statement Node (Type 1).
+Node's coordinates correspond to the beginning and to the end of the respective
+code entry, a statement or an entire loop including all the nested code.
+Additionally, Loop Nodes have coordinates for initialization, condition and
+increment clauses.  If coordinate information is present, it is presented in
+the same format as the @code{coordinates} extension prefixed by 1.  Otherwise,
+it is replaced by a single integer 0.  Coordinates information does not capture
+the file name since it is the same as the one in the @code{coordinates}
+extension to avoid duplication.  The root node does not have any coordinates.
+
+An example of correct textual representaiton of the @code{codemodel} extension
+is as follows.
+
+@example
+Type (0 = loop, 1 = stmt)
+0
+# Coordinates
+0
+# Initializer coordinates
+0
+# Condition coordinates
+0
+# Increment coordinates
+0
+# Children
+1
+# Type (0 = loop, 1 = stmt)
+1
+# Coordinates
+1
+# File name
+(null)
+# Starting line and column
+2 1
+# Ending line and column
+2 4
+# Indentation
+1
+# Children
+0
+@end example
+
+@noindent @strong{Data Structure}
+
+@noindent The @code{codemodel} extension data structure is as follows:
+
+@example
+@group
+enum @{
+  OSL_CODEMODEL_LOOP,     /* This node wraps an \ref osl_codemodel_loop. */
+  OSL_CODEMODEL_STMT,     /* This node wraps an \ref osl_codemodel_stmt. */
+  OSL_CODEMODEL_UNDEFINED /* This node does not wrap anything. */
+@};
+@end group
+
+@group
+struct osl_codemodel_loop @{
+  /* Loop sequential identifier. */
+  int id;
+  /* Coordinates of the entire loop nest. */
+  osl_coordinates_p coordinates;
+  /* Coordinates of the loop initialization expression (<code>i = 1;</code>)*/
+  osl_coordinates_p initializer_coordinates;
+  /* Coordinates ot the loop condition expression (<code>i <= 42;</code>)*/
+  osl_coordinates_p condition_coordinates;
+  /* Coordinates of the loop increment expression (<code>i++</code>)*/
+  osl_coordinates_p increment_coordinates;
+@};
+typedef struct osl_codemodel_loop   osl_codemodel_loop_t;
+typedef struct osl_codemodel_loop * osl_codemodel_loop_p;
+@end group
+
+@group
+struct osl_codemodel_stmt @{
+  /* Sequential identifier of the innermost loop enclosing this statement, in
+   * the same code model. */
+  int parent_id;
+  /* Coordinates of the statement. */
+  osl_coordinates_p coordinates;
+@};
+typedef struct osl_codemodel_stmt   osl_codemodel_stmt_t;
+typedef struct osl_codemodel_stmt * osl_codemodel_stmt_p;
+@end group
+
+@group
+struct osl_codemodel @{
+  union @{
+    struct osl_codemodel_loop *loop;
+    struct osl_codemodel_stmt *stmt;
+  @} u;                            /* Wrapped code entity. */
+  int kind;                       /* Kind of entity wrapped in u.*/
+  int nb_children;                /* Number of child nodes.*/
+  struct osl_codemodel **children;/* Pointers to child nodes.*/
+@};
+typedef struct osl_codemodel   osl_codemodel_t;
+typedef struct osl_codemodel * osl_codemodel_p;
+@end group
+@end example
+
+@c ---------------------------------------------------------------------------
 
 @node Clay Extension
 @subsection Clay Extension
